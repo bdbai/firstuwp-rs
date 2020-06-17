@@ -147,7 +147,8 @@ impl impl_App {
             // TODO: safe to hold an exclusive reference to ptr?
             ptr.as_mut().base = inner.query::<IApplicationOverrides>();
 
-            // WARNING: 
+            // WARNING: This is only a trick to prevent the instances from
+            // releasing too early.
             std::mem::forget(inner);
 
             Ok(result)
@@ -228,16 +229,6 @@ impl impl_App {
         _this: NonNullRawComPtr<IUnknown>,
         _: RawComPtr<LaunchActivatedEventArgs>,
     ) -> ErrorCode {
-        /*let factory = match winrt::factory::<TextBlock, ITextBlockFactory>() {
-            Ok(f) => f,
-            Err(c) => return c.code(),
-        };
-        let mut inner: Object = Default::default();
-        let frame_obj: Object = Default::default();
-        let frame = match factory.create_instance(frame_obj, &mut inner) {
-            Ok(f) => f,
-            Err(c) => return c.code(),
-        };*/
         match Self::on_launch_callback() {
             Ok(()) => ErrorCode(0),
             Err(c) => c.code(),
