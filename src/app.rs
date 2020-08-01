@@ -1,5 +1,7 @@
+use crate::abi::*;
+use crate::interop::debug_log;
+use crate::main_page::MainPage;
 use crate::windows::application_model::activation::*;
-use crate::windows::ui::xaml::controls::TextBlock;
 use crate::windows::ui::xaml::*;
 use std::ptr::NonNull;
 use winrt::*;
@@ -28,65 +30,6 @@ unsafe impl ComInterface for App {
     }
 }
 
-#[repr(C)]
-pub struct abi_IUnknown {
-    pub unknown_query_interface:
-        extern "system" fn(NonNullRawComPtr<IUnknown>, &Guid, *mut RawPtr) -> ErrorCode,
-    pub unknown_add_ref: extern "system" fn(NonNullRawComPtr<IUnknown>) -> u32,
-    pub unknown_release: extern "system" fn(NonNullRawComPtr<IUnknown>) -> u32,
-}
-#[repr(C)]
-pub struct abi_IInspectable {
-    iunknown: abi_IUnknown,
-
-    pub inspectable_iids:
-        unsafe extern "system" fn(NonNullRawComPtr<Object>, *mut u32, *mut *mut Guid) -> ErrorCode,
-    pub inspectable_type_name: unsafe extern "system" fn(
-        NonNullRawComPtr<Object>,
-        *mut <HString as AbiTransferable>::Abi,
-    ) -> ErrorCode,
-    pub inspectable_trust_level:
-        unsafe extern "system" fn(NonNullRawComPtr<Object>, *mut i32) -> ErrorCode,
-}
-#[repr(C)]
-pub struct abi_IApplicationOverride {
-    iinspectable: abi_IInspectable,
-    pub on_activated:
-        extern "system" fn(NonNullRawComPtr<IUnknown>, RawComPtr<IActivatedEventArgs>) -> ErrorCode,
-    pub on_launched: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<LaunchActivatedEventArgs>,
-    ) -> ErrorCode,
-    pub on_file_activated: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<FileActivatedEventArgs>,
-    ) -> ErrorCode,
-    pub on_search_activated: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<SearchActivatedEventArgs>,
-    ) -> ErrorCode,
-    pub on_share_target_activated: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<ShareTargetActivatedEventArgs>,
-    ) -> ErrorCode,
-    pub on_file_open_picker_activated: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<FileOpenPickerActivatedEventArgs>,
-    ) -> ErrorCode,
-    pub on_file_save_picker_activated: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<FileSavePickerActivatedEventArgs>,
-    ) -> ErrorCode,
-    pub on_cached_file_updater_activated: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<CachedFileUpdaterActivatedEventArgs>,
-    ) -> ErrorCode,
-    pub on_window_created: extern "system" fn(
-        NonNullRawComPtr<IUnknown>,
-        RawComPtr<IWindowCreatedEventArgs>,
-    ) -> ErrorCode,
-}
-
 unsafe impl AbiTransferable for App {
     type Abi = RawComPtr<Self>;
     fn get_abi(&self) -> Self::Abi {
@@ -101,7 +44,7 @@ unsafe impl AbiTransferable for App {
 struct impl_App {
     vtable: *const abi_IApplicationOverride,
     count: RefCount,
-    base: IApplicationOverrides,
+    base: Object,
 }
 
 impl impl_App {
@@ -144,12 +87,7 @@ impl impl_App {
             let mut inner = Default::default();
             winrt::factory::<Application, IApplicationFactory>()?
                 .create_instance(result.query::<Object>(), &mut inner)?;
-            // TODO: safe to hold an exclusive reference to ptr?
-            ptr.as_mut().base = inner.query::<IApplicationOverrides>();
-
-            // WARNING: This is only a trick to prevent the instances from
-            // releasing too early.
-            std::mem::forget(inner);
+            ptr.as_mut().base = inner;
 
             Ok(result)
         }
@@ -172,8 +110,14 @@ impl impl_App {
                 (*this).count.add_ref();
                 return ErrorCode(0);
             }
-            *interface = std::ptr::null_mut();
-            ErrorCode(0x80004002)
+            interface.as_mut().map(|p| *p = std::ptr::null_mut());
+            (*this)
+                .base
+                .raw_query::<Object>(iid, std::mem::transmute(interface));
+            match interface.as_ref().and_then(|p| p.as_ref()) {
+                Some(_) => ErrorCode(0),
+                None => ErrorCode(0x80004002),
+            }
         }
     }
     extern "system" fn unknown_add_ref(this: NonNullRawComPtr<IUnknown>) -> u32 {
@@ -218,10 +162,10 @@ impl impl_App {
         ErrorCode(0x80004001)
     }
     fn on_launch_callback() -> Result<()> {
-        let frame = TextBlock::new()?;
-        frame.set_text(format!("Hello Rust from UWP!"))?;
+        let frame = MainPage::new()?;
+        let content = frame.query::<UIElement>();
         let win = Window::current()?;
-        win.set_content(frame.query::<UIElement>())?;
+        win.set_content(content)?;
         win.activate()?;
         Ok(())
     }
@@ -277,11 +221,14 @@ impl impl_App {
         let this = this.as_raw() as *mut Self;
         unsafe {
             let this = &*this;
-            this.base.get_abi().map_or(ErrorCode(0x80004002), |abi| {
-                (abi.vtable().on_window_created)(abi, args)
-                    .ok()
-                    .map_or_else(|e| e.code(), |()| ErrorCode(0))
-            })
+            this.base.query::<IApplicationOverrides>().get_abi().map_or(
+                ErrorCode(0x80004002),
+                |abi| {
+                    (abi.vtable().on_window_created)(abi, args)
+                        .ok()
+                        .map_or_else(|e| e.code(), |()| ErrorCode(0))
+                },
+            )
         }
     }
 }

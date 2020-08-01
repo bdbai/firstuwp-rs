@@ -1,6 +1,8 @@
 #![windows_subsystem = "windows"]
+mod abi;
 mod app;
 mod interop;
+mod main_page;
 
 use interop::init_apartment;
 use winrt::*;
@@ -9,32 +11,15 @@ import!(
     dependencies
         os
     types
-        windows::ui::xaml::{
-            Application, ApplicationInitializationCallback,
-            IApplicationFactory, IApplicationOverrides, Window, UIElement
-        }
-        windows::ui::xaml::controls::TextBlock
-        windows::application_model::activation::{
-            IActivatedEventArgs, LaunchActivatedEventArgs,
-            FileActivatedEventArgs, SearchActivatedEventArgs,
-            ShareTargetActivatedEventArgs, FileOpenPickerActivatedEventArgs,
-            FileSavePickerActivatedEventArgs,
-            CachedFileUpdaterActivatedEventArgs, IWindowCreatedEventArgs
-        }
+        windows::foundation::PropertyValue
+        windows::ui::xaml::{Application, IApplicationFactory, Window}
+        windows::ui::xaml::controls::{Button, IButtonFactory, TextBlock, Page, IPageFactory}
 );
 
 fn start_app() -> Result<()> {
     use windows::ui::xaml::*;
     init_apartment()?;
     Application::start(ApplicationInitializationCallback::new(|_| {
-        /*let mut app = app::App::new();
-        let ioverride = app.query::<Object>();
-        let mut inner = Default::default();
-        let complete_app = winrt::factory::<Application, IApplicationFactory>()?
-            .create_instance(ioverride, &mut inner)?;
-        app.set_base(inner.query::<IApplicationOverrides>());
-
-        Ok(())*/
         app::App::new()?;
         Ok(())
     }))
