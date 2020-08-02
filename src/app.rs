@@ -1,5 +1,4 @@
 use crate::abi::*;
-use crate::interop::debug_log;
 use crate::main_page::MainPage;
 use crate::windows::application_model::activation::*;
 use crate::windows::ui::xaml::*;

@@ -1,5 +1,4 @@
 use crate::abi::*;
-use crate::interop::debug_log;
 use crate::windows::foundation::PropertyValue;
 use crate::windows::ui::xaml::controls::{Button, IButtonFactory};
 use crate::windows::ui::xaml::controls::{IPageFactory, IPageOverrides, IUserControl, Page};
