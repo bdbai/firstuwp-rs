@@ -113,26 +113,27 @@ impl impl_MainPage {
         iid: &Guid,
         interface: *mut RawPtr,
     ) -> ErrorCode {
-        unsafe {
-            let this: *mut Self = this.as_raw() as _;
-            if iid == &<MainPage as ComInterface>::iid()
-                || iid == &<IUnknown as ComInterface>::iid()
-                || iid == &<Object as ComInterface>::iid()
-                || iid == &<IPageOverrides as ComInterface>::iid()
-            {
-                *interface = this as RawPtr;
-                (*this).count.add_ref();
-                return ErrorCode(0);
-            }
+        let interface = unsafe { interface.as_mut().unwrap() };
+        let this: &mut Self = unsafe { std::mem::transmute(this) };
+        if iid == &<MainPage as ComInterface>::iid()
+            || iid == &<IUnknown as ComInterface>::iid()
+            || iid == &<Object as ComInterface>::iid()
+            || iid == &<IPageOverrides as ComInterface>::iid()
+        {
+            *interface = this as *mut Self as *mut _;
+            this.count.add_ref();
+            return ErrorCode(0);
+        }
 
-            interface.as_mut().map(|p| *p = std::ptr::null_mut());
-            (*this)
-                .base
-                .raw_query::<Object>(iid, std::mem::transmute(interface));
-            match interface.as_ref().and_then(|p| p.as_ref()) {
-                Some(_) => ErrorCode(0),
-                None => ErrorCode(0x80004002),
-            }
+        *interface = std::ptr::null_mut();
+        unsafe {
+            this.base
+                .raw_query::<Object>(iid, std::mem::transmute(interface as *mut _));
+        }
+        if interface.is_null() {
+            ErrorCode(0x80004002)
+        } else {
+            ErrorCode(0)
         }
     }
     extern "system" fn unknown_add_ref(this: NonNullRawComPtr<IUnknown>) -> u32 {

@@ -1,7 +1,10 @@
 use crate::abi::*;
-use crate::main_page::MainPage;
 use crate::windows::application_model::activation::*;
+use crate::windows::ui::xaml::controls::{Frame, IFrame2, IFrameFactory};
+use crate::windows::ui::xaml::interop::{TypeKind, TypeName};
+use crate::windows::ui::xaml::media::animation::NavigationTransitionInfo;
 use crate::windows::ui::xaml::*;
+use crate::xaml_metadata_provider::XamlMetadataProvider;
 use std::ptr::NonNull;
 use winrt::*;
 
@@ -44,6 +47,7 @@ struct impl_App {
     vtable: *const abi_IApplicationOverride,
     count: RefCount,
     base: Object,
+    xaml_metadata_provider: XamlMetadataProvider,
 }
 
 impl impl_App {
@@ -74,10 +78,11 @@ impl impl_App {
             vtable: &Self::VTABLE,
             count: RefCount::new(),
             base: Default::default(),
+            xaml_metadata_provider: XamlMetadataProvider::new()?,
         };
         unsafe {
             // Initialize impl_App and App
-            let mut result: App = std::mem::zeroed();
+            let mut result = std::mem::zeroed();
             let mut ptr: NonNull<Self> = NonNull::new_unchecked(Box::into_raw(Box::new(value)));
             *<App as AbiTransferable>::set_abi(&mut result) =
                 Some(NonNullRawComPtr::new(ptr.cast()));
@@ -97,26 +102,34 @@ impl impl_App {
         iid: &Guid,
         interface: *mut RawPtr,
     ) -> ErrorCode {
+        let interface = unsafe { interface.as_mut().unwrap() };
+        let this: &mut Self = unsafe { std::mem::transmute(this) };
+        if iid == &<App as ComInterface>::iid()
+            || iid == &<IUnknown as ComInterface>::iid()
+            || iid == &<Object as ComInterface>::iid()
+            || iid == &<IAgileObject as ComInterface>::iid()
+            || iid == &<IApplicationOverrides as ComInterface>::iid()
+        {
+            *interface = this as *mut Self as *mut _;
+            this.count.add_ref();
+            return ErrorCode(0);
+        }
+        *interface = std::ptr::null_mut();
         unsafe {
-            let this: *mut Self = this.as_raw() as _;
-            if iid == &<App as ComInterface>::iid()
-                || iid == &<IUnknown as ComInterface>::iid()
-                || iid == &<Object as ComInterface>::iid()
-                || iid == &<IAgileObject as ComInterface>::iid()
-                || iid == &<IApplicationOverrides as ComInterface>::iid()
-            {
-                *interface = this as RawPtr;
-                (*this).count.add_ref();
-                return ErrorCode(0);
-            }
-            interface.as_mut().map(|p| *p = std::ptr::null_mut());
-            (*this)
-                .base
-                .raw_query::<Object>(iid, std::mem::transmute(interface));
-            match interface.as_ref().and_then(|p| p.as_ref()) {
-                Some(_) => ErrorCode(0),
-                None => ErrorCode(0x80004002),
-            }
+            this.base
+                .raw_query::<Object>(iid, std::mem::transmute(interface as *mut _));
+        }
+        if !interface.is_null() {
+            return ErrorCode(0);
+        }
+        unsafe {
+            this.xaml_metadata_provider
+                .raw_query::<Object>(iid, std::mem::transmute(interface as *mut _));
+        }
+        if interface.is_null() {
+            ErrorCode(0x80004002)
+        } else {
+            ErrorCode(0)
         }
     }
     extern "system" fn unknown_add_ref(this: NonNullRawComPtr<IUnknown>) -> u32 {
@@ -161,7 +174,16 @@ impl impl_App {
         ErrorCode(0x80004001)
     }
     fn on_launch_callback() -> Result<()> {
-        let frame = MainPage::new()?;
+        let mut frame = Default::default();
+        winrt::factory::<Frame, IFrameFactory>()?.create_instance(Object::default(), &mut frame)?;
+        frame.query::<IFrame2>().navigate(
+            TypeName {
+                kind: TypeKind::Custom,
+                name: "FirstUwp.MainPage".into(),
+            },
+            Object::default(),
+            NavigationTransitionInfo::default(),
+        )?;
         let content = frame.query::<UIElement>();
         let win = Window::current()?;
         win.set_content(content)?;

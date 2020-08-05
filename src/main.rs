@@ -3,18 +3,13 @@ mod abi;
 mod app;
 mod interop;
 mod main_page;
+mod xaml_metadata_provider;
+mod xaml_system_base_type;
+mod xaml_user_type;
 
 use interop::init_apartment;
 use winrt::*;
-
-import!(
-    dependencies
-        os
-    types
-        windows::foundation::PropertyValue
-        windows::ui::xaml::{Application, IApplicationFactory, Window}
-        windows::ui::xaml::controls::{Button, IButtonFactory, TextBlock, Page, IPageFactory}
-);
+include!(concat!(env!("OUT_DIR"), "/winrt.rs"));
 
 fn start_app() -> Result<()> {
     use windows::ui::xaml::*;
