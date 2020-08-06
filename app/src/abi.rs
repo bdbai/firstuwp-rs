@@ -1,9 +1,9 @@
-use crate::windows::application_model::activation::*;
-use crate::windows::ui::xaml::controls::*;
-use crate::windows::ui::xaml::interop::*;
-use crate::windows::ui::xaml::markup::*;
-use crate::windows::ui::xaml::navigation::*;
-use crate::windows::ui::xaml::*;
+use bindings::windows::application_model::activation::*;
+use bindings::windows::ui::xaml::controls::*;
+use bindings::windows::ui::xaml::interop::*;
+use bindings::windows::ui::xaml::markup::*;
+use bindings::windows::ui::xaml::navigation::*;
+use bindings::windows::ui::xaml::*;
 use winrt::*;
 
 #[repr(C)]

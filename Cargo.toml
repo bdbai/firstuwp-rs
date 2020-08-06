@@ -1,13 +1,6 @@
-[package]
-name = "first-uwp"
-version = "0.1.0"
-authors = ["bdbai <bdbaiapp@163.com>"]
-edition = "2018"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[build-dependencies]
-winrt = "0.7.2"
-
-[dependencies]
-winrt = "0.7.2"
+members = [
+    "bindings",
+    "app",
+]

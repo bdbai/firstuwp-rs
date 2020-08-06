@@ -1,9 +1,7 @@
 use crate::abi::*;
-use crate::windows::ui::xaml::interop::TypeName;
-use crate::{
-    windows::ui::xaml::markup::{IXamlMetadataProvider, IXamlType, XmlnsDefinition},
-    xaml_user_type::XamlUserType,
-};
+use crate::xaml_user_type::XamlUserType;
+use bindings::windows::ui::xaml::interop::TypeName;
+use bindings::windows::ui::xaml::markup::{IXamlMetadataProvider, IXamlType, XmlnsDefinition};
 use std::ptr::NonNull;
 use winrt::*;
 

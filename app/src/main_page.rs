@@ -1,9 +1,13 @@
 use crate::abi::*;
-use crate::windows::foundation::PropertyValue;
-use crate::windows::ui::xaml::controls::{Button, IButtonFactory};
-use crate::windows::ui::xaml::controls::{IPageFactory, IPageOverrides, IUserControl, Page};
-use crate::windows::ui::xaml::navigation::{NavigatingCancelEventArgs, NavigationEventArgs};
-use crate::windows::ui::xaml::{RoutedEventHandler, UIElement};
+use bindings::windows::foundation::{PropertyValue, Uri};
+use bindings::windows::ui::xaml::{
+    controls::{
+        primitives::ComponentResourceLocation, Button, IButtonFactory, IPageFactory,
+        IPageOverrides, IUserControl, Page,
+    },
+    navigation::{NavigatingCancelEventArgs, NavigationEventArgs},
+    Application, RoutedEventHandler, UIElement,
+};
 use std::ptr::NonNull;
 use winrt::*;
 
@@ -78,7 +82,7 @@ impl impl_MainPage {
                 Some(NonNullRawComPtr::new(ptr.cast()));
 
             // Construct inner content
-            let mut content = Default::default();
+            /*let mut content = Default::default();
             winrt::factory::<Button, IButtonFactory>()?
                 .create_instance(Object::default(), &mut content)?;
             let button = content.query::<Button>();
@@ -95,14 +99,21 @@ impl impl_MainPage {
                     Ok(())
                 }
             }))?;
-            let content = content.query::<UIElement>();
+            let content = content.query::<UIElement>();*/
 
             // Set base
             let mut inner = Default::default();
             winrt::factory::<Page, IPageFactory>()?
                 .create_instance(result.query::<Object>(), &mut inner)?;
-            inner.query::<IUserControl>().set_content(content)?;
+            //inner.query::<IUserControl>().set_content(content)?;
             (*ptr.as_mut()).base = inner;
+
+            let resource_locator = Uri::create_uri("ms-appx:///MainPage.xaml")?;
+            Application::load_component_with_resource_location(
+                result.query::<Object>(),
+                resource_locator,
+                ComponentResourceLocation::Application,
+            )?;
 
             Ok(result)
         }

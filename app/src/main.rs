@@ -9,10 +9,9 @@ mod xaml_user_type;
 
 use interop::init_apartment;
 use winrt::*;
-include!(concat!(env!("OUT_DIR"), "/winrt.rs"));
 
 fn start_app() -> Result<()> {
-    use windows::ui::xaml::*;
+    use bindings::windows::ui::xaml::*;
     init_apartment()?;
     Application::start(ApplicationInitializationCallback::new(|_| {
         app::App::new()?;

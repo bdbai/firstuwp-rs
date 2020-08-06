@@ -1,10 +1,10 @@
 use crate::abi::*;
-use crate::windows::application_model::activation::*;
-use crate::windows::ui::xaml::controls::{Frame, IFrame2, IFrameFactory};
-use crate::windows::ui::xaml::interop::{TypeKind, TypeName};
-use crate::windows::ui::xaml::media::animation::NavigationTransitionInfo;
-use crate::windows::ui::xaml::*;
 use crate::xaml_metadata_provider::XamlMetadataProvider;
+use bindings::windows::application_model::activation::*;
+use bindings::windows::ui::xaml::controls::{Frame, IFrame2, IFrameFactory};
+use bindings::windows::ui::xaml::interop::{TypeKind, TypeName};
+use bindings::windows::ui::xaml::media::animation::NavigationTransitionInfo;
+use bindings::windows::ui::xaml::*;
 use std::ptr::NonNull;
 use winrt::*;
 
