@@ -1,12 +1,9 @@
 use crate::abi::*;
-use bindings::windows::foundation::{PropertyValue, Uri};
+use bindings::windows::foundation::Uri;
 use bindings::windows::ui::xaml::{
-    controls::{
-        primitives::ComponentResourceLocation, Button, IButtonFactory, IPageFactory,
-        IPageOverrides, IUserControl, Page,
-    },
+    controls::{primitives::ComponentResourceLocation, IPageFactory, IPageOverrides, Page},
     navigation::{NavigatingCancelEventArgs, NavigationEventArgs},
-    Application, RoutedEventHandler, UIElement,
+    Application,
 };
 use std::ptr::NonNull;
 use winrt::*;
@@ -81,33 +78,20 @@ impl impl_MainPage {
             *<MainPage as AbiTransferable>::set_abi(&mut result) =
                 Some(NonNullRawComPtr::new(ptr.cast()));
 
-            // Construct inner content
-            /*let mut content = Default::default();
-            winrt::factory::<Button, IButtonFactory>()?
-                .create_instance(Object::default(), &mut content)?;
-            let button = content.query::<Button>();
-            button.set_content(PropertyValue::create_string("Hello!")?)?;
-            button.click(RoutedEventHandler::new({
-                let mut clicked = 0;
-                let button = button.clone();
-                move |_sender, _e| {
-                    clicked += 1;
-                    button.set_content(PropertyValue::create_string(format!(
-                        "You clicked the button {} times",
-                        clicked
-                    ))?)?;
-                    Ok(())
-                }
-            }))?;
-            let content = content.query::<UIElement>();*/
-
             // Set base
             let mut inner = Default::default();
-            winrt::factory::<Page, IPageFactory>()?
-                .create_instance(result.query::<Object>(), &mut inner)?;
-            //inner.query::<IUserControl>().set_content(content)?;
+            winrt::factory::<Page, IPageFactory>()?.create_instance(
+                // Passing this object as a parameter causes memory access
+                // violation on Windows 10.0.15063 (ARM device).
+                // It is probably due to IWeakReference interface not
+                // unimplemented.
+                /*result.query::<Object>()*/
+                Object::default(),
+                &mut inner,
+            )?;
             (*ptr.as_mut()).base = inner;
 
+            // Load XAML
             let resource_locator = Uri::create_uri("ms-appx:///MainPage.xaml")?;
             Application::load_component_with_resource_location(
                 result.query::<Object>(),
