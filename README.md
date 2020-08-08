@@ -45,6 +45,8 @@ where `%SDK_VERSION%` is the version of an installed Windows SDK that will provi
 makeappx pack /p FirstUwp_0.0.1.0_x64_Test.appx /v /f .\appxmapping.ini
 ```
 6. Generate a certificate for self-signing
+
+Start an elevated Powershell prompt, nagivate to the project directory and enter the following:
 ```powershell
 $cert=New-SelfSignedCertificate -Type Custom -Subject "CN=25C90434-4343-4A2A-BB16-CF3209256BD3" -KeyUsage DigitalSignature -FriendlyName "firstuwpcert" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
 $data=$cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx)
@@ -59,4 +61,4 @@ See https://docs.microsoft.com/en-us/windows/application-management/sideload-app
 signtool sign /v /fd SHA256 /a /f firstuwp_TemporaryKey.pfx FirstUwp_0.0.1.0_x64_Test.appx
 ```
 
-Then the package is ready to deploy through [Device Portal](https://docs.microsoft.com/en-us/windows/uwp/debug-test-perf/device-portal) or [App Install](https://docs.microsoft.com/en-us/windows/msix/app-installer/app-installer-root) at your option.
+Then the package is ready to deploy through [Device Portal](https://docs.microsoft.com/en-us/windows/uwp/debug-test-perf/device-portal) or [App Installer](https://docs.microsoft.com/en-us/windows/msix/app-installer/app-installer-root) at your option.
