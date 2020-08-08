@@ -109,6 +109,7 @@ impl impl_XamlUserType {
             return ErrorCode(0);
         }
 
+        *interface = std::ptr::null_mut();
         ErrorCode(0x80004002)
     }
     extern "system" fn unknown_add_ref(this: NonNullRawComPtr<IUnknown>) -> u32 {
