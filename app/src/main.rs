@@ -3,6 +3,7 @@ mod abi;
 mod app;
 mod interop;
 mod main_page;
+mod weak_ref;
 mod xaml_metadata_provider;
 mod xaml_system_base_type;
 mod xaml_user_type;

@@ -4,6 +4,7 @@ use bindings::windows::ui::xaml::interop::*;
 use bindings::windows::ui::xaml::markup::*;
 use bindings::windows::ui::xaml::navigation::*;
 use bindings::windows::ui::xaml::*;
+use std::ffi::c_void;
 use winrt::*;
 
 #[repr(C)]
@@ -156,4 +157,31 @@ pub struct abi_IXamlType {
         value: <Object as AbiTransferable>::Abi,
     ) -> ErrorCode,
     pub run_initializer: extern "system" fn(NonNullRawComPtr<IXamlType>) -> ErrorCode,
+}
+
+#[repr(C)]
+pub struct abi_IComponentConnector {
+    pub iinspectable: abi_IInspectable,
+    pub connect: extern "system" fn(
+        NonNullRawComPtr<IComponentConnector>,
+        i32,
+        object: <Object as AbiTransferable>::Abi,
+    ) -> ErrorCode,
+}
+
+#[repr(C)]
+pub struct abi_IWeakReference {
+    pub iunknown: abi_IUnknown,
+    pub resolve: extern "system" fn(
+        this: NonNullRawComPtr<IUnknown>,
+        *const Guid,
+        *mut *mut IUnknown,
+    ) -> i32,
+}
+
+#[repr(C)]
+pub struct abi_IWeakReferenceSource {
+    pub iunknown: abi_IUnknown,
+    pub get_weak_reference:
+        extern "system" fn(this: NonNullRawComPtr<IUnknown>, result: *mut *mut c_void) -> i32,
 }
