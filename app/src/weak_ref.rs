@@ -77,7 +77,7 @@ pub trait WeakRefObject {
 
         loop {
             if (count_or_pointer as isize) < 0 {
-                return unsafe { &*decode_weak_ref(count_or_pointer) }
+                return 1 + unsafe { &*decode_weak_ref(count_or_pointer) }
                     .strong
                     .fetch_add(1, Ordering::Relaxed);
             }
@@ -293,7 +293,7 @@ impl impl_WeakRef {
         let that: &mut Self = unsafe {
             std::mem::transmute(this.as_raw() as usize - size_of::<*const abi_IWeakReference>())
         };
-        that.weak.fetch_add(1, Ordering::Relaxed) + 1
+        that.strong.fetch_add(1, Ordering::Relaxed) + 1
     }
     extern "system" fn source_unknown_release(this: NonNullRawComPtr<IUnknown>) -> u32 {
         let that: &mut Self = unsafe {
