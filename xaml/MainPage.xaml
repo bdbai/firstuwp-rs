@@ -5,11 +5,91 @@
     xmlns:local="using:FirstUwp"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
-
+    mc:Ignorable="d"
+    >
+    <Page.Resources>
+        <ResourceDictionary>
+            <Style x:Key="LinkItemStyle" TargetType="GridViewItem">
+                <Style.Setters>
+                    <Setter Property="Background" Value="{ThemeResource SystemControlBackgroundBaseLowBrush}"/>
+                    <Setter Property="Margin" Value="10"/>
+                    <Setter Property="Padding" Value="40, 20, 40, 30"/>
+                    <Setter Property="MinHeight" Value="100"/>
+                    <Setter Property="VerticalAlignment" Value="Stretch"/>
+                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                    <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                </Style.Setters>
+            </Style>
+            <Style x:Key="LinkItemHeaderStyle" TargetType="TextBlock">
+                <Style.Setters>
+                    <Setter Property="Margin" Value="0,0,0,10"/>
+                    <Setter Property="FontSize" Value="34" />
+                    <Setter Property="FontWeight" Value="Light" />
+                    <Setter Property="OpticalMarginAlignment" Value="TrimSideBearings" />
+                    <Setter Property="TextWrapping" Value="WrapWholeWords"/>
+                    <Setter Property="Foreground" Value="{ThemeResource SystemAccentColorLight1}"/>
+                </Style.Setters>
+            </Style>
+            <Style x:Key="LinkItemBodyStyle" TargetType="TextBlock">
+                <Style.Setters>
+                    <Setter Property="FontSize" Value="18"/>
+                    <Setter Property="FontWeight" Value="SemiLight"/>
+                    <Setter Property="TextWrapping" Value="WrapWholeWords"/>
+                </Style.Setters>
+            </Style>
+            <Storyboard x:Name="happy_ferris_expand_storyboard">
+                <DoubleAnimation
+                    Storyboard.TargetName="happy_ferris"
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(CompositeTransform.TranslateX)"
+                    From="30"
+                    To="-10"
+                    Duration="0:0:0.5"
+                    >
+                    <DoubleAnimation.EasingFunction>
+                        <QuadraticEase EasingMode="EaseInOut"/>
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimationUsingKeyFrames
+                    Storyboard.TargetName="happy_ferris"
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(CompositeTransform.Rotation)"
+                    Duration="0:0:0.6"
+                    >
+                    <LinearDoubleKeyFrame Value="0" KeyTime="0:0:0"/>
+                    <LinearDoubleKeyFrame Value="10" KeyTime="0:0:0.1"/>
+                    <LinearDoubleKeyFrame Value="10" KeyTime="0:0:0.5"/>
+                    <LinearDoubleKeyFrame Value="0" KeyTime="0:0:0.6"/>
+                </DoubleAnimationUsingKeyFrames>
+            </Storyboard>
+            <Storyboard x:Name="happy_ferris_collapse_storyboard">
+                <DoubleAnimation
+                    Storyboard.TargetName="happy_ferris"
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(CompositeTransform.TranslateX)"
+                    From="-10"
+                    To="30"
+                    Duration="0:0:0.5"
+                    >
+                    <DoubleAnimation.EasingFunction>
+                        <QuadraticEase EasingMode="EaseInOut"/>
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimationUsingKeyFrames
+                    Storyboard.TargetName="happy_ferris"
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(CompositeTransform.Rotation)"
+                    Duration="0:0:0.5"
+                    >
+                    <LinearDoubleKeyFrame Value="0" KeyTime="0:0:0"/>
+                    <LinearDoubleKeyFrame Value="-10" KeyTime="0:0:0.1"/>
+                    <LinearDoubleKeyFrame Value="-10" KeyTime="0:0:0.4"/>
+                    <LinearDoubleKeyFrame Value="0" KeyTime="0:0:0.5"/>
+                </DoubleAnimationUsingKeyFrames>
+            </Storyboard>
+        </ResourceDictionary>
+    </Page.Resources>
     <ScrollViewer HorizontalScrollMode="Disabled" VerticalScrollBarVisibility="Auto">
         <Grid HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -18,32 +98,129 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock
+                x:Name="header"
                 Grid.Row="0"
                 Grid.Column="0"
-                Padding="20, 80, 0, 0"
+                Padding="40, 20, 0, 0"
                 Text="Rust"
+                FontWeight="Bold"
                 Style="{ThemeResource HeaderTextBlockStyle}"
                 />
             <TextBlock
+                x:Name="subheader"
                 Grid.Row="1"
                 Grid.Column="0"
-                Padding="20, 10, 20, 0"
+                Padding="40, 10, 0, 0"
                 TextWrapping="WrapWholeWords"
                 Text="A language empowering everyone to build reliable and efficient software."
                 Style="{ThemeResource SubheaderTextBlockStyle}"
                 />
             <Image
+                x:Name="happy_ferris"
                 Grid.Row="0"
                 Grid.RowSpan="2"
                 Grid.Column="1"
                 MaxWidth="100"
                 VerticalAlignment="Center"
                 Source="Assets\rustacean-flat-happy.png"
+                PointerEntered="happy_ferris_pointer_entered"
+                PointerExited="happy_ferris_pointer_exited"
                 >
                 <Image.RenderTransform>
                     <CompositeTransform TranslateX="30"/>
                 </Image.RenderTransform>
             </Image>
+            <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="40">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <GridViewItem
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Grid.Row="0"
+                    x:Name="link_item1"
+                    Style="{StaticResource LinkItemStyle}"
+                    Tapped="link_item1_tapped"
+                    >
+                    <StackPanel>
+                        <TextBlock
+                            Style="{StaticResource LinkItemHeaderStyle}"
+                            Text="Get Started"
+                            />
+                        <TextBlock
+                            Style="{StaticResource LinkItemBodyStyle}"
+                            Text="Quickly set up a Rust development environment and write a small app!"
+                            />
+                    </StackPanel>
+                </GridViewItem>
+                <GridViewItem
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Grid.Row="1"
+                    x:Name="link_item2"
+                    Style="{StaticResource LinkItemStyle}"
+                    Tapped="link_item2_tapped"
+                    >
+                    <StackPanel>
+                        <TextBlock
+                            Style="{StaticResource LinkItemHeaderStyle}"
+                            Text="Learn"
+                            />
+                        <TextBlock
+                            Style="{StaticResource LinkItemBodyStyle}"
+                            Text="Rust is for students and those who are interested in learning about systems concepts."
+                            />
+                    </StackPanel>
+                </GridViewItem>
+                <GridViewItem
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Grid.Row="2"
+                    x:Name="link_item3"
+                    Style="{StaticResource LinkItemStyle}"
+                    Tapped="link_item3_tapped"
+                    >
+                    <StackPanel>
+                        <TextBlock
+                            Style="{StaticResource LinkItemHeaderStyle}"
+                            Text="Play"
+                            />
+                        <TextBlock
+                            Style="{StaticResource LinkItemBodyStyle}"
+                            Text="The playground allows you to experiment with Rust before you install it locally."
+                            />
+                    </StackPanel>
+                </GridViewItem>
+            </Grid>
         </Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState>
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1007"/>
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="subheader.Padding" Value="80, 10, 20, 0"/>
+                        <Setter Target="header.Padding" Value="80, 80, 0, 0"/>
+                        <Setter Target="link_item1.(Grid.Column)" Value="0"/>
+                        <Setter Target="link_item2.(Grid.Column)" Value="1"/>
+                        <Setter Target="link_item3.(Grid.Column)" Value="2"/>
+                        <Setter Target="link_item1.(Grid.ColumnSpan)" Value="1"/>
+                        <Setter Target="link_item2.(Grid.ColumnSpan)" Value="1"/>
+                        <Setter Target="link_item3.(Grid.ColumnSpan)" Value="1"/>
+                        <Setter Target="link_item1.(Grid.RowSpan)" Value="3"/>
+                        <Setter Target="link_item2.(Grid.RowSpan)" Value="3"/>
+                        <Setter Target="link_item3.(Grid.RowSpan)" Value="3"/>
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
     </ScrollViewer>
 </Page>

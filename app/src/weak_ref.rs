@@ -1,10 +1,8 @@
 use crate::abi::*;
 use std::ffi::c_void;
+use std::mem::size_of;
 use std::ptr::NonNull;
-use std::{
-    mem::size_of,
-    sync::atomic::{AtomicU32, AtomicUsize, Ordering},
-};
+use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 use winrt::*;
 
 #[repr(transparent)]
@@ -128,6 +126,28 @@ pub trait WeakRefObject {
                 return target as u32;
             }
         }
+    }
+    fn get_weak(&self, this: NonNullRawComPtr<IUnknown>) -> *mut *mut abi_IWeakReference {
+        let source = self.make_weak_ref(this);
+        let mut result = std::ptr::null_mut();
+        unsafe {
+            (impl_WeakRef::SOURCE_VTABLE.get_weak_reference)(
+                std::mem::transmute(source),
+                &mut result as *mut _ as *mut _,
+            )
+        };
+        result
+    }
+    unsafe fn from_weak<T: ComInterface + AbiTransferable>(
+        weak: *const *mut abi_IWeakReference,
+    ) -> ComPtr<T> {
+        let mut result = ComPtr::default();
+        (impl_WeakRef::VTABLE.resolve)(
+            NonNullRawComPtr::new(NonNull::new(weak as *mut _).unwrap()),
+            &T::iid(),
+            std::mem::transmute(result.set_abi()),
+        );
+        result
     }
 }
 
