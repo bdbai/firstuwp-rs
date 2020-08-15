@@ -1,10 +1,12 @@
 use crate::abi::*;
+use crate::twir_entry::{impl_TwirEntry, TwirEntry};
 use crate::weak_ref::WeakRefObject;
 use bindings::windows::foundation::{Point, Uri};
 use bindings::windows::system::Launcher;
 use bindings::windows::ui::xaml::controls::primitives::ComponentResourceLocation;
 use bindings::windows::ui::xaml::controls::{
-    GridViewItem, IPageFactory, IPageOverrides, Image, Page,
+    GridViewItem, IPageFactory, IPageOverrides, Image, ItemClickEventArgs, ItemClickEventHandler,
+    ListView, Page, ProgressRing, TextBlock,
 };
 use bindings::windows::ui::xaml::input::{
     PointerEventHandler, PointerRoutedEventArgs, TappedEventHandler,
@@ -12,7 +14,7 @@ use bindings::windows::ui::xaml::input::{
 use bindings::windows::ui::xaml::markup::IComponentConnector;
 use bindings::windows::ui::xaml::media::animation::Storyboard;
 use bindings::windows::ui::xaml::navigation::{NavigatingCancelEventArgs, NavigationEventArgs};
-use bindings::windows::ui::xaml::Application;
+use bindings::windows::ui::xaml::{Application, RoutedEventArgs, RoutedEventHandler};
 use std::mem::size_of;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicUsize;
@@ -66,6 +68,9 @@ struct impl_MainPage {
     happy_ferris_expand_storyboard: Storyboard,
     happy_ferris_collapse_storyboard: Storyboard,
     happy_ferris_image: Image,
+    twir_progress: ProgressRing,
+    twir_title: TextBlock,
+    twir_list: ListView,
 }
 
 impl WeakRefObject for impl_MainPage {
@@ -113,6 +118,9 @@ impl impl_MainPage {
             happy_ferris_expand_storyboard: Storyboard::default(),
             happy_ferris_collapse_storyboard: Storyboard::default(),
             happy_ferris_image: Image::default(),
+            twir_title: TextBlock::default(),
+            twir_list: ListView::default(),
+            twir_progress: ProgressRing::default(),
         };
         unsafe {
             // Initialize impl_MainPage and MainPage
@@ -348,6 +356,20 @@ impl impl_MainPage {
             let this_ptr = std::mem::transmute(this_raw);
             let this = &mut *this_raw;
             match connect_id {
+                1 => {
+                    let object = object.query::<Page>();
+                    let weak = this.get_weak(this_ptr);
+                    if let Err(e) = object.loaded(RoutedEventHandler::new(move |sender, e| {
+                        let this = Self::from_weak::<MainPage>(weak);
+                        let this = match this.get_abi() {
+                            Some(ptr) => &mut *(ptr.as_raw() as *mut Self),
+                            None => return Ok(()),
+                        };
+                        this.page_loaded(sender, e)
+                    })) {
+                        return e.code();
+                    }
+                }
                 2 => this.happy_ferris_expand_storyboard = object.query(),
                 3 => this.happy_ferris_collapse_storyboard = object.query(),
                 6 => {
@@ -385,7 +407,18 @@ impl impl_MainPage {
                         return e.code();
                     };
                 }
-                7 => {
+                7 => this.twir_progress = object.query(),
+                8 => this.twir_title = object.query(),
+                9 => {
+                    this.twir_list = object.query();
+                    if let Err(e) = this
+                        .twir_list
+                        .item_click(ItemClickEventHandler::new(Self::twir_list_item_click))
+                    {
+                        return e.code();
+                    }
+                }
+                13 => {
                     if let Err(e) = Self::set_link_item_click_handler(
                         object,
                         "https://www.rust-lang.org/learn/get-started",
@@ -393,14 +426,14 @@ impl impl_MainPage {
                         return e.code();
                     }
                 }
-                8 => {
+                14 => {
                     if let Err(e) =
                         Self::set_link_item_click_handler(object, "https://www.rust-lang.org/learn")
                     {
                         return e.code();
                     }
                 }
-                9 => {
+                15 => {
                     if let Err(e) =
                         Self::set_link_item_click_handler(object, "https://play.rust-lang.org/")
                     {
@@ -411,6 +444,66 @@ impl impl_MainPage {
             }
         }
         ErrorCode(0)
+    }
+
+    fn page_loaded(&mut self, sender: &Object, _e: &RoutedEventArgs) -> Result<()> {
+        use bindings::windows::foundation::{
+            collections::VectorIterator, AsyncOperationWithProgressCompletedHandler,
+            IAsyncOperationWithProgress,
+        };
+        use bindings::windows::globalization::date_time_formatting::DateTimeFormatter;
+        use bindings::windows::ui::core::IdleDispatchedHandler;
+        use bindings::windows::ui::xaml::Visibility;
+        use bindings::windows::web::syndication::{SyndicationClient, SyndicationFeed};
+        use itertools::join;
+        use scraper::{Html, Selector};
+
+        let this = sender.query::<MainPage>().into_abi().unwrap().as_raw() as *mut _;
+        let dispatcher = self.base.query::<Page>().dispatcher()?;
+        let client = SyndicationClient::new()?;
+        client
+            .retrieve_feed_async(Uri::create_uri("https://this-week-in-rust.org/atom.xml")?)?
+            .set_completed(AsyncOperationWithProgressCompletedHandler::new(
+                move |info: &IAsyncOperationWithProgress<SyndicationFeed, _>, _status| {
+                    let feed = info.get_results()?;
+                    let selector = Selector::parse(
+                        "#quote-of-the-week + blockquote p, #quote-of-the-week + p",
+                    )
+                    .unwrap();
+                    let formatter = DateTimeFormatter::short_date()?;
+                    let items: Vec<TwirEntry> = VectorIterator::new(feed.items()?)
+                        .map(|i| {
+                            let summary = i.summary()?.text()?.to_string();
+                            let doc = Html::parse_fragment(&summary);
+                            let summary = join(doc.select(&selector).flat_map(|r| r.text()), "");
+                            TwirEntry::new(
+                                i.title()?.text()?,
+                                formatter.format(i.last_updated_time()?)?,
+                                HString::from(summary),
+                                i.links()?.get_at(0)?.uri()?,
+                            )
+                            .map(|e| e.query())
+                        })
+                        .collect::<std::result::Result<Vec<_>, Error>>()?;
+                    dispatcher.run_idle_async(IdleDispatchedHandler::new(move |_args| {
+                        let this: &mut Self = unsafe { &mut *this };
+                        this.twir_progress.set_visibility(Visibility::Collapsed)?;
+                        this.twir_title.set_text(feed.title()?.text()?)?;
+                        this.twir_list.set_visibility(Visibility::Visible)?;
+
+                        let list_view_items = this.twir_list.items()?;
+                        list_view_items.clear()?;
+                        for item in items.iter() {
+                            list_view_items.append(item.query::<Object>())?;
+                        }
+
+                        this.release();
+                        Ok(())
+                    }))?;
+                    Ok(())
+                },
+            ))?;
+        Ok(())
     }
 
     fn happy_ferris_pointer_entered(
@@ -443,6 +536,17 @@ impl impl_MainPage {
             let _ = Launcher::launch_uri_async(uri)?;
             Ok(())
         }))?;
+        Ok(())
+    }
+
+    fn twir_list_item_click(_object: &Object, e: &ItemClickEventArgs) -> Result<()> {
+        let item = match e.clicked_item()?.query::<TwirEntry>().get_abi() {
+            Some(p) => p,
+            None => return Ok(()),
+        };
+
+        let _ =
+            Launcher::launch_uri_async(&unsafe { &*(item.as_raw() as *mut impl_TwirEntry) }.link)?;
         Ok(())
     }
 }

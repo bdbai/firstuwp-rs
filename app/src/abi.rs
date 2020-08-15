@@ -1,5 +1,6 @@
 use bindings::windows::application_model::activation::*;
 use bindings::windows::ui::xaml::controls::*;
+use bindings::windows::ui::xaml::data::*;
 use bindings::windows::ui::xaml::interop::*;
 use bindings::windows::ui::xaml::markup::*;
 use bindings::windows::ui::xaml::navigation::*;
@@ -131,14 +132,12 @@ pub struct abi_IXamlType {
         NonNullRawComPtr<IXamlType>,
         *mut <TypeName as AbiTransferable>::Abi,
     ) -> ErrorCode,
-    pub activate_instance: extern "system" fn(
-        NonNullRawComPtr<IXamlType>,
-        *mut <Object as AbiTransferable>::Abi,
-    ) -> ErrorCode,
+    pub activate_instance:
+        extern "system" fn(NonNullRawComPtr<IXamlType>, *mut RawComPtr<Object>) -> ErrorCode,
     pub create_from_string: extern "system" fn(
         NonNullRawComPtr<IXamlType>,
         value: <HString as AbiTransferable>::Abi,
-        *mut <Object as AbiTransferable>::Abi,
+        *mut RawComPtr<Object>,
     ) -> ErrorCode,
     pub get_member: extern "system" fn(
         NonNullRawComPtr<IXamlType>,
@@ -147,14 +146,14 @@ pub struct abi_IXamlType {
     ) -> ErrorCode,
     pub add_to_vector: extern "system" fn(
         NonNullRawComPtr<IXamlType>,
-        instance: <Object as AbiTransferable>::Abi,
-        value: <Object as AbiTransferable>::Abi,
+        instance: RawComPtr<Object>,
+        value: RawComPtr<Object>,
     ) -> ErrorCode,
     pub add_to_map: extern "system" fn(
         NonNullRawComPtr<IXamlType>,
-        instance: <Object as AbiTransferable>::Abi,
-        key: <Object as AbiTransferable>::Abi,
-        value: <Object as AbiTransferable>::Abi,
+        instance: RawComPtr<Object>,
+        key: RawComPtr<Object>,
+        value: RawComPtr<Object>,
     ) -> ErrorCode,
     pub run_initializer: extern "system" fn(NonNullRawComPtr<IXamlType>) -> ErrorCode,
 }
@@ -165,7 +164,7 @@ pub struct abi_IComponentConnector {
     pub connect: extern "system" fn(
         NonNullRawComPtr<IComponentConnector>,
         i32,
-        object: <Object as AbiTransferable>::Abi,
+        object: RawComPtr<Object>,
     ) -> ErrorCode,
 }
 
@@ -184,4 +183,67 @@ pub struct abi_IWeakReferenceSource {
     pub iunknown: abi_IUnknown,
     pub get_weak_reference:
         extern "system" fn(this: NonNullRawComPtr<IUnknown>, result: *mut *mut c_void) -> i32,
+}
+
+#[repr(C)]
+pub struct abi_ICustomPropertyProvider {
+    pub iinspectable: abi_IInspectable,
+    pub get_custom_property: extern "system" fn(
+        NonNullRawComPtr<ICustomPropertyProvider>,
+        name: <HString as AbiTransferable>::Abi,
+        result: *mut <ICustomProperty as AbiTransferable>::Abi,
+    ) -> ErrorCode,
+    pub get_indexed_custom_property: extern "system" fn(
+        NonNullRawComPtr<ICustomPropertyProvider>,
+        name: <HString as AbiTransferable>::Abi,
+        typename: <TypeName as AbiTransferable>::Abi,
+        result: *mut <ICustomProperty as AbiTransferable>::Abi,
+    ) -> ErrorCode,
+    pub get_string_representation: extern "system" fn(
+        NonNullRawComPtr<ICustomPropertyProvider>,
+        result: *mut <HString as AbiTransferable>::Abi,
+    ) -> ErrorCode,
+    pub get_type: extern "system" fn(
+        NonNullRawComPtr<ICustomPropertyProvider>,
+        result: *mut <TypeName as AbiTransferable>::Abi,
+    ) -> ErrorCode,
+}
+
+#[repr(C)]
+pub struct abi_ICustomProperty {
+    pub iinspectable: abi_IInspectable,
+    pub get_type: extern "system" fn(
+        NonNullRawComPtr<ICustomProperty>,
+        result: *mut <TypeName as AbiTransferable>::Abi,
+    ) -> ErrorCode,
+    pub get_name: extern "system" fn(
+        NonNullRawComPtr<ICustomProperty>,
+        result: *mut <HString as AbiTransferable>::Abi,
+    ) -> ErrorCode,
+    pub get_value: extern "system" fn(
+        NonNullRawComPtr<ICustomProperty>,
+        target: RawComPtr<Object>,
+        result: *mut RawComPtr<Object>,
+    ) -> ErrorCode,
+    pub set_value: extern "system" fn(
+        NonNullRawComPtr<ICustomProperty>,
+        target: RawComPtr<Object>,
+        value: RawComPtr<Object>,
+    ) -> ErrorCode,
+    pub get_indexed_value: extern "system" fn(
+        NonNullRawComPtr<ICustomProperty>,
+        target: RawComPtr<Object>,
+        index: RawComPtr<Object>,
+        result: *mut RawComPtr<Object>,
+    ) -> ErrorCode,
+    pub set_indexed_value: extern "system" fn(
+        NonNullRawComPtr<ICustomProperty>,
+        target: RawComPtr<Object>,
+        value: RawComPtr<Object>,
+        index: RawComPtr<Object>,
+    ) -> ErrorCode,
+    pub get_can_write:
+        extern "system" fn(NonNullRawComPtr<ICustomProperty>, result: *mut bool) -> ErrorCode,
+    pub get_can_read:
+        extern "system" fn(NonNullRawComPtr<ICustomProperty>, result: *mut bool) -> ErrorCode,
 }
