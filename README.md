@@ -17,34 +17,32 @@ Add-AppxPackage -Register AppxManifest.xml
 ## Cross compilation and Packaging
 The default targets `*-pc-windows-*` has some link options unsuitable for UWP applications. A package that contains executable files generated with such target fails Windows App Cert Kit (WACK) in terms of `AppContainerCheck` and unsupported APIs used. To pass WACK, `*-uwp-windows-*` targets should be used.
 
-[Xargo](https://github.com/japaric/xargo) is recommended for cross-compilation in this project. Using Xargo, it is not necessary to build the whole Rust toolchain in order to consume tier-3 targets.
+<del>[Xargo](https://github.com/japaric/xargo) is recommended for cross-compilation in this project. Using Xargo, it is not necessary to build the whole Rust toolchain in order to consume tier-3 targets.</del> Xargo is not maintained any more. A more recommended way is to use [`build-std`](https://doc.rust-lang.org/cargo/reference/unstable.html#build-std) feature in cargo.
 
 Follow the steps below in `powershell` to build and generate a `.appx` package:
-1. Set up Rust nightly toolchain override for this project
+1. Set up Rust nightly toolchain for this project
 ```powershell
+rustup toolchain install nightly-2020-08-15
 rustup override set nightly
+rustup component add rust-src
 ```
-2. Install xargo
+2. Build with std-aware cargo
 ```powershell
-cargo install xargo
+cargo build --release -Z build-std=std,panic_abort --target x86_64-uwp-windows-msvc
 ```
-3. Build with xargo
-```powershell
-xargo build --release --target x86_64-uwp-windows-msvc
-```
-`i686-uwp-windows-msvc`, `thumbv7a-uwp-windows-msvc` and `aarch64-uwp-windows-msvc` targets can be used for x64, ARM and ARM64.
+`i686-uwp-windows-msvc`, `thumbv7a-uwp-windows-msvc` and `aarch64-uwp-windows-msvc` targets can be used for x64, ARM and ARM64. `panic_abort` needs to be specified explicitly due to https://github.com/rust-lang/wg-cargo-std-aware/issues/29 .
 
-4. Set up environment variables before consuming Windows SDK command line tools
+3. Set up environment variables before consuming Windows SDK command line tools
 ```powershell
 $env:Path+=";${env:ProgramFiles(x86)}\Windows Kits\10\bin\%SDK_VERSION%\x64"
 ```
 where `%SDK_VERSION%` is the version of an installed Windows SDK that will provide the necessary command line tools, such as `10.0.18362.0`.
 
-5. Create a `.appx` package
+4. Create a `.appx` package
 ```powershell
 makeappx pack /p FirstUwp_0.0.1.0_x64_Test.appx /v /f .\appxmapping.ini
 ```
-6. Generate a certificate for self-signing
+5. Generate a certificate for self-signing
 
 Start an elevated Powershell prompt, nagivate to the project directory and enter the following:
 ```powershell
@@ -52,11 +50,11 @@ $cert=New-SelfSignedCertificate -Type Custom -Subject "CN=25C90434-4343-4A2A-BB1
 $data=$cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx)
 [io.file]::WriteAllBytes('firstuwp_TemporaryKey.pfx', $data)
 ```
-7. Import the generated certificate
+6. Import the generated certificate
 
 See https://docs.microsoft.com/en-us/windows/application-management/sideload-apps-in-windows-10#how-do-i-sideload-an-app-on-desktop .
 
-8. Sign the package
+7. Sign the package
 ```powershell
 signtool sign /v /fd SHA256 /a /f firstuwp_TemporaryKey.pfx FirstUwp_0.0.1.0_x64_Test.appx
 ```
