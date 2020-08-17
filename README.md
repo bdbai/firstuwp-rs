@@ -1,5 +1,5 @@
 # First UWP in Rust
-<a href='https://www.microsoft.com/store/apps/9PKF8HP44J2H?cid=storebadge&ocid=badge'><img src='https://developer.microsoft.com/en-us/store/badges/images/English_get-it-from-MS.png' alt='English badge' style='width: 284px; height: 104px;'/></a>
+<a href='https://www.microsoft.com/store/apps/9PKF8HP44J2H?cid=storebadge&ocid=badge'><img src='https://developer.microsoft.com/en-us/store/badges/images/English_get-it-from-MS.png' alt='English badge' width="240"/></a>
 
 The first Universal Windows Platform app written in pure Rust.
 
@@ -18,6 +18,7 @@ The first Universal Windows Platform app written in pure Rust.
 - Idiomatic and safe Rust implementation (let's wait for https://github.com/microsoft/winrt-rs/issues/81)
 - Generate .xbf file (see https://github.com/microsoft/winrt-rs/issues/306#issuecomment-670046333)
 - `{x:Bind}`-style binding (too much boilerplate code)
+- CI pipelines
 
 ## Build and Run
 ```powershell
